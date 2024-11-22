@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Safety Evaluation</title>
+    <link rel="stylesheet" href="@sweetalert2/theme-bulma/bulma.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <h1>Driver Safety Evaluation from Telematics Data</h1>
+    <form id="driver-eval-form">
+        <div class="form-group">
+            <label for="Driver_ID">Driver ID:</label>
+            <input type="text" id="driver_id" name="driver_id" required>
+        </div>
+
+        <div class="form-group">
+            <label for="speed_limit">Speed Limit (km/h):</label>
+            <input type="number" id="speed_limit" name="speed_limit" min="0" required><br><br>
+        </div>
+
+        <label for="speeding_event">Driver Speed (km/h):</label>
+        <input type="number" id="speeding_event" name="speeding_event" min="0" required><br><br>
+
+        <div class="form-group">
+            <h4 class="card-title">Driving Events</h4>
+            <p class="card-text">Please select the driving events that occurred during the trip.</p>
+            <label class="check">
+                <input type="checkbox" id="braking_event" name="braking_event" value="1">
+                <span>Aggressive/Emergency Braking</span>
+            </label>
+            <label class="check">
+                <input type="checkbox" id="accelerating_event" name="accelerating_event" value="1">
+                <span>Accessive Acceleration</span>
+            </label>
+
+            <label class="check">
+                <input type="checkbox" id="cornering_event" name="cornering_event" value="1">
+                <span>Aggressive Cornering</span>
+            </label>
+
+            <label class="check">
+                <input type="checkbox" id="distracted_camevent" name="distracted_camevent" value="1">
+                <span>Distracted Drving</span>
+            </label>
+
+            <label class="check">
+                <input type="checkbox" id="following_distance_camevent" name="following_distance_camevent" value="1">
+                <span>Following at an unsafe distance</span>
+            </label>
+        </div>
+
+        <br>
+
+        <div class="form-group">
+            <label for="Trip_Duration">Trip Duration (minutes):</label>
+            <input type="number" id="trip_duration" name="trip_duration" placeholder="Enter Trip Duration" min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="Trip_Distance">Trip Distance (kilometres):</label>
+            <input type="number" id="trip_distance" name="trip_distance" placeholder="Enter Trip Distance" required
+                min="0">
+        </div>
+
+        <div class="form-group">
+            <label for="Idle_Duration">Idle Duration (minutes):</label>
+            <input type="number" id="idle_duration" name="idle_duration" placeholder="Enter Idle Duration" min="0">
+        </div>
+
+        <div class="form-group">
+            <input type="submit" onclick=submitForm() value="Submit">
+        </div>
+    </form>
+    <script>
+        document.getElementById('driver-eval-form').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            const formData = new FormData(this);
+
+            // Ensure checkboxes are included in the form data
+            ['braking_event', 'accelerating_event', 'cornering_event', 'distracted_camevent', 'following_distance_camevent'].forEach(id => {
+                if (!formData.has(id)) {
+                    formData.append(id, '0');
+                }
+            });
+
+            fetch('/evaluate_driver', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // Display icon depending on score
+                    const icon = data.Safety_Score >= 90 ? 'success' : 'warning';
+
+                    Swal.fire({
+                        title: 'Driver Evaluation Results',
+                        html: `
+                        <p><strong>Driver ID:</strong> ${data.Driver_ID}</p>
+                        <p><strong>Safety Score:</strong> ${data.Safety_Score}</p>
+                        <p><strong>Recommendations:</strong> ${data.Recommendations}</p>
+                    `,
+                        icon: icon
+                    });
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'An error occurred while processing your request.',
+                        icon: 'error'
+                    });
+                });
+        });
+    </script>
+</body>
+
+</html>
